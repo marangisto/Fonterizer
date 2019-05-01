@@ -73,7 +73,14 @@ process size file = do
     putStrLn "} // fontlib"
 
 glyphData :: Font -> Float -> Char -> IO GlyphData
-glyphData font size char = do
+glyphData font size ' ' = do
+    gd0 <- glyphData' font size '0'
+    gd <- glyphData' font size ' '
+    return gd { width = width gd0 }
+glyphData font size char = glyphData' font size char
+
+glyphData' :: Font -> Float -> Char -> IO GlyphData
+glyphData' font size char = do
     Just glyph <- findGlyph font char
     vmu <- getFontVerticalMetrics font
     let s = scaleForPixelHeight vmu size
