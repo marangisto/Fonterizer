@@ -44,16 +44,10 @@ data GlyphData = GlyphData
 
 preamble :: [String]
 preamble =
-    [ "#include <stdint.h>"
+    [ "#include <fontlib.h>"
     , ""
-    , "struct glyph_t"
+    , "namespace fontlib"
     , "{"
-    , "    uint8_t      width;"
-    , "    uint8_t      height;"
-    , "    int8_t       offset_h;"
-    , "    int8_t       offset_v;"
-    , "    const uint8_t *bitmap;"
-    , "};"
     , ""
     ]
 
@@ -62,11 +56,21 @@ process size file = do
     tt <- loadTTF file
     (i:_) <- enumerateFonts tt
     font <- initFont tt i
-    let cs = ['A'..'C']
+    let cs = [' '..'Z']
     xs <- mapM (glyphData font size) cs
     mapM_ (putStrLn . unlines . bitmapDecl) xs
-    putStrLn $ "extern glyph_t font[" <> show (length cs) <> "] ="
+    putStrLn $ "static glyph_t glyphs[" <> show (length cs) <> "] ="
     mapM_ putStrLn $ map indent $ initializer $ map glyphDecl xs
+    let fontDecl =
+            [ show $ round size
+            , show $ ord (head cs)
+            , show $ ord (last cs)
+            , "glyphs"
+            ]
+    putStrLn ""
+    putStrLn $ "font_t font = {" <> (intercalate ", " fontDecl) <> " };"
+    putStrLn ""
+    putStrLn "} // fontlib"
 
 glyphData :: Font -> Float -> Char -> IO GlyphData
 glyphData font size char = do
