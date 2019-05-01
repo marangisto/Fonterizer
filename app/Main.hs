@@ -24,5 +24,9 @@ showBitMap :: (Int, Int) -> UArray (Int, Int) Word8 -> IO ()
 showBitMap (w, h) bs = do
     forM_ [0..h-1] $ \r -> do
         forM_ [0..w-1] $ \c -> do
-            putStr $ if bs!(r, c) > 0 then "#" else " "
+            putStr $ grayLevel $ bs!(r, c)
         putStrLn ""
+
+grayLevel :: Word8 -> String
+grayLevel x = show $ x `div` 32
+
