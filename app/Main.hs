@@ -56,10 +56,10 @@ process size file = do
     tt <- loadTTF file
     (i:_) <- enumerateFonts tt
     font <- initFont tt i
-    let cs = [' '..'Z']
+    let cs = [' '..'~']
     xs <- mapM (glyphData font size) cs
     mapM_ (putStrLn . unlines . bitmapDecl) xs
-    putStrLn $ "static glyph_t glyphs[" <> show (length cs) <> "] ="
+    putStrLn $ "static const glyph_t glyphs[" <> show (length cs) <> "] ="
     mapM_ putStrLn $ map indent $ initializer $ map glyphDecl xs
     let fontDecl =
             [ show $ round size
@@ -68,7 +68,7 @@ process size file = do
             , "glyphs"
             ]
     putStrLn ""
-    putStrLn $ "font_t font = {" <> (intercalate ", " fontDecl) <> " };"
+    putStrLn $ "const font_t font = {" <> (intercalate ", " fontDecl) <> " };"
     putStrLn ""
     putStrLn "} // fontlib"
 
@@ -94,7 +94,7 @@ glyphDecl GlyphData{..} = "{ " <> intercalate ", "
 bitmapDecl :: GlyphData -> [String]
 bitmapDecl GlyphData{..}  = 
     [ "// '" <> [ char ] <> "'"
-    , "static uint8_t " <> bitmapName char <> "[] ="
+    , "static const uint8_t " <> bitmapName char <> "[] ="
     ] ++ (map indent $ initializer $ map row [0..height-1])
     where row r = intercalate ", " $ map (col r) [0..width-1]
           col r c = hex $ bitmap!(r, c)
