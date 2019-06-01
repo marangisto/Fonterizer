@@ -13,12 +13,14 @@ import System.Console.CmdArgs
 
 data Options = Options
     { size    :: Float
+    , name    :: String
     , files   :: [FilePath]
     } deriving (Show, Eq, Data, Typeable)
 
 options :: Main.Options
 options = Main.Options
     { size = def &= help "bitmap height"
+    , name = def &= help "exported name"
     , files = def &= args &= typ "FILES"
     } &=
     verbosity &=
@@ -31,7 +33,7 @@ main :: IO ()
 main = do
     opts@Options{..} <- cmdArgs $ options { size = 20 }
     mapM_ putStrLn preamble
-    mapM_ (process size) files
+    mapM_ (process name size) files
 
 data GlyphData = GlyphData
     { char      :: Char
@@ -51,26 +53,38 @@ preamble =
     , ""
     ]
 
-process :: Float -> FilePath -> IO ()
-process size file = do
+process :: String -> Float -> FilePath -> IO ()
+process name size file = do
     tt <- loadTTF file
     (i:_) <- enumerateFonts tt
     font <- initFont tt i
     let cs = [' '..'~']
     xs <- mapM (glyphData font size) cs
+    putStrLn $ unlines
+        [ "namespace fontdata_" <> name
+        , "{"
+        ]
     mapM_ (putStrLn . unlines . bitmapDecl) xs
     putStrLn $ "static const glyph_t glyphs[" <> show (length cs) <> "] ="
     mapM_ putStrLn $ map indent $ initializer $ map glyphDecl xs
     let fontDecl =
             [ show $ round size
+            , show $ minimum $ map offsetV xs
+            , show $ maximum $ map (\GlyphData{..} -> offsetV + height - 1) xs
             , show $ ord (head cs)
             , show $ ord (last cs)
             , "glyphs"
             ]
-    putStrLn ""
-    putStrLn $ "const font_t font = {" <> (intercalate ", " fontDecl) <> " };"
-    putStrLn ""
-    putStrLn "} // fontlib"
+    putStrLn $ unlines
+        [ ""
+        , "const font_t font = {" <> (intercalate ", " fontDecl) <> " };"
+        , ""
+        , "} // namespace fontdata_" <> name
+        , ""
+        , "const font_t& " <> name <> " = fontdata_" <> name <> "::font;"
+        , ""
+        , "} // fontlib"
+        ]
 
 glyphData :: Font -> Float -> Char -> IO GlyphData
 glyphData font size ' ' = do
