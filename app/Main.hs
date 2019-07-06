@@ -10,6 +10,7 @@ import Data.Char (ord)
 import Data.List (intercalate)
 import Numeric (showHex)
 import System.Console.CmdArgs
+import RLE (encode)
 
 data Options = Options
     { size    :: Float
@@ -119,6 +120,13 @@ bitmapDecl GlyphData{..}  =
     ] ++ (map indent $ initializer $ map row [0..height-1])
     where row r = intercalate ", " $ map (col r) [0..width-1]
           col r c = hex $ bitmap!(r, c)
+
+bitmapDeclRLE :: GlyphData -> [String]
+bitmapDeclRLE GlyphData{..}  = 
+    [ "// '" <> [ char ] <> "'"
+    , "static const uint8_t " <> bitmapName char <> "[] ="
+    ] ++ (map indent $ initializer $ map hex xs)
+    where xs = encode [ bitmap!(r, c) | r <- [0..height-1], c <- [0..width-1] ]
 
 bitmapName :: Char -> String
 bitmapName char = "bitmap_" <> (show $ ord char)
