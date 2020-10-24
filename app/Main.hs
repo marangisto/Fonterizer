@@ -72,6 +72,7 @@ process name size file = do
             [ show $ round size
             , show $ minimum $ map offsetV xs
             , show $ maximum $ map (\GlyphData{..} -> offsetV + height - 1) xs
+            , show $ maximum $ map width xs
             , show $ ord (head cs)
             , show $ ord (last cs)
             , "glyphs"
